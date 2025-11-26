@@ -10,7 +10,8 @@ WORKDIR /app
 COPY . /app
 
 RUN pip install --no-cache-dir \
-    sqlalchemy psycopg2-binary python-dotenv click pytest pytest-cov flask gunicorn\nEXPOSE 8000
+    sqlalchemy psycopg2-binary python-dotenv click pytest pytest-cov flask gunicorngunicorn\nEXPOSE 8000
 
 CMD ["python", "-m", "lead_generation_app.app_main"]
+
 

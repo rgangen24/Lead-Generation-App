@@ -336,6 +336,7 @@ def main():
     except Exception:
         port = 8081
     _init()
+    logging.info('{"event":"admin_web_bind","port":%d}' % port)
     app.run(host='0.0.0.0', port=port)
 
 if __name__ == '__main__':

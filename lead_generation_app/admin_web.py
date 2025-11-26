@@ -1,4 +1,5 @@
 import os
+import logging
 import json
 import base64
 import hmac
@@ -18,9 +19,9 @@ from lead_generation_app.config.pricing import BASE_PLANS
 
 app = Flask(__name__, template_folder=os.path.join(os.path.dirname(__file__), 'templates'))
 
-@app.before_first_request
 def _init():
-    init_db()
+    with app.app_context():
+        init_db()
 
 def _month_window(now):
     start = datetime(now.year, now.month, 1)
@@ -327,11 +328,14 @@ def _protect_admin():
             return Response('Unauthorized', 401, {'WWW-Authenticate': 'Basic realm="Admin"'})
 
 def main():
+    logging.basicConfig(level=os.getenv('LOG_LEVEL', 'INFO'))
+    logging.info('{"event":"admin_web_start"}')
     raw = os.getenv('PORT') or os.getenv('ADMIN_PORT') or '8081'
     try:
         port = int(raw)
     except Exception:
         port = 8081
+    _init()
     app.run(host='0.0.0.0', port=port)
 
 if __name__ == '__main__':

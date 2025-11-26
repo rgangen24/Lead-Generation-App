@@ -1,0 +1,11 @@
+[
+  ".pytest_cache/tests/test_leads.py::test_create_and_get_lead",
+  ".pytest_cache/tests/test_leads.py::test_list_and_update_and_delete",
+  "tests/test_metrics_layer_pytest.py::test_metrics_counters",
+  "tests/test_pricing_caps.py::PricingCapsTests::test_pay_per_lead_caps",
+  "tests/test_pricing_caps.py::PricingCapsTests::test_subscription_caps",
+  "tests/test_pricing_logic_pytest.py::test_caps_defined",
+  "tests/test_pricing_logic_pytest.py::test_discounts_applied",
+  "tests/test_webhooks_pytest.py::test_sendgrid_unsubscribe_and_bounce_and_delivered",
+  "tests/test_webhooks_pytest.py::test_twilio_delivered_failed_and_stopped"
+]

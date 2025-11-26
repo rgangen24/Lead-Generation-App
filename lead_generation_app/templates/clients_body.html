@@ -1,0 +1,8 @@
+{% for c in clients %}
+  <tr>
+    <td class="p-2 border"><a href="/admin/clients/{{ c.id }}" class="text-blue-600">{{ c.name }}</a></td>
+    <td class="p-2 border">{{ c.plan or '-' }}</td>
+    <td class="p-2 border">{{ c.cap_used }}</td>
+    <td class="p-2 border">{{ c.next_billing_date or '-' }}</td>
+  </tr>
+{% endfor %}

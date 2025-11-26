@@ -1,0 +1,55 @@
+<div class="grid grid-cols-1 gap-6">
+  <div>
+    <h2 class="text-xl font-semibold mb-2">Lead → Qualified (by platform)</h2>
+    <table class="min-w-full">
+      <thead><tr><th>Platform</th><th>Raw</th><th>Qualified</th><th>Rate</th></tr></thead>
+      <tbody>
+        {% for pf, row in metrics.ltq.items() %}
+          <tr><td>{{ pf or '-' }}</td><td>{{ row.raw }}</td><td>{{ row.qualified }}</td><td>{{ '%.2f'|format(row.rate) }}</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <div>
+    <h2 class="text-xl font-semibold mb-2">Qualified → Delivered (by client & platform)</h2>
+    <table class="min-w-full">
+      <thead><tr><th>Client</th><th>Platform</th><th>Qualified</th><th>Delivered</th><th>Rate</th></tr></thead>
+      <tbody>
+        {% if metrics.client_id %}
+          {% for pf, row in metrics.qtd.items() %}
+            <tr><td>{{ metrics.client_id }}</td><td>{{ pf or '-' }}</td><td>{{ row.qualified or 0 }}</td><td>{{ row.delivered or 0 }}</td><td>{{ '%.2f'|format(row.rate or 0) }}</td></tr>
+          {% endfor %}
+        {% else %}
+          {% for bc_id, pfmap in metrics.qtd.items() %}
+            {% for pf, row in pfmap.items() %}
+              <tr><td>{{ bc_id }}</td><td>{{ pf or '-' }}</td><td>{{ row.qualified or 0 }}</td><td>{{ row.delivered or 0 }}</td><td>{{ '%.2f'|format(row.rate or 0) }}</td></tr>
+            {% endfor %}
+          {% endfor %}
+        {% endif %}
+      </tbody>
+    </table>
+  </div>
+  <div>
+    <h2 class="text-xl font-semibold mb-2">Delivered → Opened/Bounced (by client, platform & method)</h2>
+    <table class="min-w-full">
+      <thead><tr><th>Client</th><th>Platform</th><th>Method</th><th>Delivered</th><th>Opened</th><th>Bounced</th><th>Open Rate</th><th>Bounce Rate</th></tr></thead>
+      <tbody>
+        {% if metrics.client_id %}
+          {% for pf, methods in metrics.dob.items() %}
+            {% for method, row in methods.items() %}
+              <tr><td>{{ metrics.client_id }}</td><td>{{ pf or '-' }}</td><td>{{ method or '-' }}</td><td>{{ row.delivered }}</td><td>{{ row.opened }}</td><td>{{ row.bounced }}</td><td>{{ '%.2f'|format(row.open_rate) }}</td><td>{{ '%.2f'|format(row.bounce_rate) }}</td></tr>
+            {% endfor %}
+          {% endfor %}
+        {% else %}
+          {% for bc_id, pfmap in metrics.dob.items() %}
+            {% for pf, methods in pfmap.items() %}
+              {% for method, row in methods.items() %}
+                <tr><td>{{ bc_id }}</td><td>{{ pf or '-' }}</td><td>{{ method or '-' }}</td><td>{{ row.delivered }}</td><td>{{ row.opened }}</td><td>{{ row.bounced }}</td><td>{{ '%.2f'|format(row.open_rate) }}</td><td>{{ '%.2f'|format(row.bounce_rate) }}</td></tr>
+              {% endfor %}
+            {% endfor %}
+          {% endfor %}
+        {% endif %}
+      </tbody>
+    </table>
+  </div>
+</div>

@@ -8,10 +8,12 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 WORKDIR /app
 COPY . /app
+RUN chmod +x /app/start.sh
 
 RUN pip install --no-cache-dir \
     sqlalchemy psycopg2-binary python-dotenv click pytest pytest-cov flask gunicorngunicorn\nEXPOSE 8000
 
 CMD ["python", "-m", "lead_generation_app.app_main"]
+
 
 

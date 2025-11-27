@@ -1,4 +1,4 @@
-FROM python:3.13-slim
+﻿FROM python:3.13-slim
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1
@@ -11,9 +11,8 @@ COPY . /app
 RUN chmod +x /app/start.sh
 
 RUN pip install --no-cache-dir \
-    sqlalchemy psycopg2-binary python-dotenv click pytest pytest-cov flask gunicorngunicorn\nEXPOSE 8000
+    sqlalchemy psycopg2-binary python-dotenv click pytest pytest-cov flask gunicorn
+
+EXPOSE 8000
 
 CMD ["python", "-m", "lead_generation_app.app_main"]
-
-
-

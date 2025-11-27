@@ -8,7 +8,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 WORKDIR /app
 COPY . /app
-RUN chmod +x /app/start.sh
+# Normalize line endings and ensure executable
+RUN sed -i 's/\r$//' /app/start.sh && chmod +x /app/start.sh
 
 RUN pip install --no-cache-dir \
     sqlalchemy psycopg2-binary python-dotenv click pytest pytest-cov flask gunicorn

@@ -1,4 +1,4 @@
-﻿FROM python:3.13-slim
+FROM python:3.13-slim
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1
@@ -9,7 +9,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 WORKDIR /app
 COPY . /app
 # Normalize line endings and ensure executable
-RUN sed -i 's/\r$//' /app/start.sh && chmod +x /app/start.sh
+RUN sed -i '1s/^\xEF\xBB\xBF//' /app/start.sh && sed -i 's/\r$//' /app/start.sh && chmod +x /app/start.sh
 
 RUN pip install --no-cache-dir \
     sqlalchemy psycopg2-binary python-dotenv click pytest pytest-cov flask gunicorn
@@ -17,3 +17,4 @@ RUN pip install --no-cache-dir \
 EXPOSE 8000
 
 CMD ["python", "-m", "lead_generation_app.app_main"]
+

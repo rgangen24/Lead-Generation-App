@@ -1,68 +1,24 @@
-import os
+﻿import os
 import re
 import json
 import threading
 import time
 from urllib.parse import urlparse
 from urllib.request import urlopen
-from sqlalchemy import create_engine, Column, Integer, String, Boolean, JSON
-from sqlalchemy.orm import sessionmaker, declarative_base
+from lead_generation_app.database.database import get_session
+from lead_generation_app.database.models import RawLead, QualifiedLead
 
-# -------------------------
-# DATABASE SETUP
-# -------------------------
-DB_HOST = os.getenv("DB_HOST", "localhost")
-DB_PORT = os.getenv("DB_PORT", "5432")
-DB_NAME = os.getenv("DB_NAME", "your_db_name")
-DB_USER = os.getenv("DB_USER", "your_user")
-DB_PASS = os.getenv("DB_PASS", "your_pass")
 
-DATABASE_URL = f"postgresql+psycopg2://{DB_USER}:{DB_PASS}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
-
-engine = create_engine(DATABASE_URL, echo=True)
-SessionLocal = sessionmaker(bind=engine)
-Base = declarative_base()
-
-class RawLead(Base):
-    __tablename__ = "raw_leads"
-    id = Column(Integer, primary_key=True)
-    name = Column(String)
-    company_name = Column(String)
-    phone = Column(String)
-    whatsapp = Column(String)
-    email = Column(String)
-    website = Column(String)
-    industry = Column(String)
-
-class QualifiedLead(Base):
-    __tablename__ = "qualified_leads"
-    id = Column(Integer, primary_key=True)
-    raw_lead_id = Column(Integer)
-    name = Column(String)
-    company_name = Column(String)
-    phone = Column(String)
-    whatsapp = Column(String)
-    email = Column(String)
-    qualification_score = Column(Integer)
-    score_category = Column(String)
-    industry = Column(String)
-    summary = Column(String)
-    enriched_data_json = Column(JSON)
-    verified_status = Column(Boolean)
-
-Base.metadata.create_all(engine)
-
-# -------------------------
-# VALIDATION
-# -------------------------
 def is_valid_email(v):
     if not v: return False
     return re.match(r"^[^@\s]+@[^@\s]+\.[^@\s]+$", v) is not None
+
 
 def is_valid_phone(v):
     if not v: return False
     digits = re.sub(r"\D", "", v)
     return len(digits) >= 7
+
 
 def start_scheduler(task_fn, interval_seconds=3600):
     stop = threading.Event()
@@ -77,12 +33,14 @@ def start_scheduler(task_fn, interval_seconds=3600):
     t.start()
     return stop
 
+
 def is_valid_url(v):
     if not v: return False
     p = urlparse(v)
     if p.scheme and p.netloc: return True
     p = urlparse("http://" + v)
     return bool(p.netloc)
+
 
 def validate_leads(leads):
     out = []
@@ -103,9 +61,7 @@ def validate_leads(leads):
     print(f"Validated {len(out)} leads")
     return out
 
-# -------------------------
-# QUALIFICATION (simple example)
-# -------------------------
+
 def qualify_leads(lead):
     score = 0
     if lead.get("email"): score += 1
@@ -114,9 +70,7 @@ def qualify_leads(lead):
     lead["score_category"] = "high" if score >= 2 else "low"
     return lead
 
-# -------------------------
-# ENRICHMENT
-# -------------------------
+
 def enrich_leads(lead):
     u = lead.get("website")
     content_len = 0
@@ -137,11 +91,9 @@ def enrich_leads(lead):
     lead["verified_status"] = site_ok
     return lead
 
-# -------------------------
-# MAIN PROCESS
-# -------------------------
+
 def run_all():
-    session = SessionLocal()
+    session = get_session()
     try:
         print("Loading raw leads...")
         raw_leads = session.query(RawLead).all()

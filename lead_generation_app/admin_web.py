@@ -392,3 +392,61 @@ def main():
 if __name__ == '__main__':
     main()
 
+@app.route('/admin/clients/bulk-soft-delete', methods=['POST'])
+def bulk_soft_delete():
+    ids = request.form.getlist('client_ids')
+    s = get_session()
+    try:
+        if ids:
+            for i in ids:
+                try:
+                    cid = int(i)
+                except Exception:
+                    continue
+                c = s.execute(select(BusinessClient).where(BusinessClient.id == cid)).scalars().first()
+                if c:
+                    c.is_deleted = True
+                    c.deleted_at = datetime.utcnow()
+            s.commit()
+        return redirect(url_for('clients'))
+    finally:
+        s.close()
+
+@app.route('/admin/clients/bulk-restore', methods=['POST'])
+def bulk_restore():
+    ids = request.form.getlist('client_ids')
+    s = get_session()
+    try:
+        if ids:
+            for i in ids:
+                try:
+                    cid = int(i)
+                except Exception:
+                    continue
+                c = s.execute(select(BusinessClient).where(BusinessClient.id == cid)).scalars().first()
+                if c:
+                    c.is_deleted = False
+                    c.deleted_at = None
+            s.commit()
+        return redirect(url_for('deleted_clients'))
+    finally:
+        s.close()
+
+@app.route('/admin/clients/bulk-permanent-delete', methods=['POST'])
+def bulk_permanent_delete():
+    ids = request.form.getlist('client_ids')
+    s = get_session()
+    try:
+        if ids:
+            for i in ids:
+                try:
+                    cid = int(i)
+                except Exception:
+                    continue
+                c = s.execute(select(BusinessClient).where(BusinessClient.id == cid)).scalars().first()
+                if c:
+                    s.delete(c)
+            s.commit()
+        return redirect(url_for('deleted_clients'))
+    finally:
+        s.close()

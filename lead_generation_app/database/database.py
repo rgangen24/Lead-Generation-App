@@ -1,7 +1,7 @@
-import os
+﻿import os
 import logging
 from dotenv import load_dotenv
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.engine import URL
 
@@ -17,14 +17,17 @@ def _build_url():
     name = os.getenv("DB_NAME")
     user = os.getenv("DB_USER")
     password = os.getenv("DB_PASS")
-    return URL.create(
-        drivername="postgresql+psycopg2",
-        username=user,
-        password=password,
-        host=host,
-        port=int(port) if port else None,
-        database=name,
-    )
+    if host and name and user:
+        return URL.create(
+            drivername="postgresql+psycopg2",
+            username=user,
+            password=password,
+            host=host,
+            port=int(port) if port else None,
+            database=name,
+        )
+    sqlite_path = os.path.abspath(os.getenv("DB_SQLITE_PATH", "dev.db"))
+    return f"sqlite+pysqlite:///{sqlite_path}"
 
 
 def get_engine():
@@ -43,6 +46,17 @@ def get_session():
     return SessionLocal()
 
 
+def _ensure_soft_delete_columns(conn):
+    if getattr(conn, "dialect", None) and conn.dialect.name != "postgresql":
+        return
+    res = conn.execute(text("select count(*) from information_schema.columns where table_name='business_clients' and column_name='is_deleted'"))
+    if int(res.scalar_one()) == 0:
+        conn.execute(text("alter table business_clients add column is_deleted boolean default false"))
+    res2 = conn.execute(text("select count(*) from information_schema.columns where table_name='business_clients' and column_name='deleted_at'"))
+    if int(res2.scalar_one()) == 0:
+        conn.execute(text("alter table business_clients add column deleted_at timestamp null"))
+
+
 def init_db():
     from .models import Base
 
@@ -50,4 +64,5 @@ def init_db():
     with eng.begin() as conn:
         logging.info("{\"event\":\"db_connection_ok\"}")
         Base.metadata.create_all(bind=conn)
+        _ensure_soft_delete_columns(conn)
         logging.info("{\"event\":\"tables_ensured\"}")

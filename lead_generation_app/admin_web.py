@@ -1,4 +1,4 @@
-import os
+﻿import os
 import logging
 import json
 import base64
@@ -55,7 +55,7 @@ def clients():
     try:
         now = datetime.utcnow()
         start, end = _month_window(now)
-        rows = s.execute(select(BusinessClient)).scalars().all()
+        rows = s.execute(select(BusinessClient).where(BusinessClient.is_deleted.is_(False))).scalars().all()
         q = (request.args.get('q') or '').strip().lower()
         plan = (request.args.get('plan') or '').strip().lower()
         data = []
@@ -160,7 +160,7 @@ def api_clients_list():
     try:
         now = datetime.utcnow()
         start, end = _month_window(now)
-        rows = s.execute(select(BusinessClient)).scalars().all()
+        rows = s.execute(select(BusinessClient).where(BusinessClient.is_deleted.is_(False))).scalars().all()
         out = []
         for c in rows:
             delivered = s.execute(select(func.count(DeliveredLead.id)).where(DeliveredLead.business_client_id == c.id).where(DeliveredLead.delivered_at >= start).where(DeliveredLead.delivered_at < end)).scalar_one()
@@ -327,6 +327,56 @@ def _protect_admin():
         if not ok:
             return Response('Unauthorized', 401, {'WWW-Authenticate': 'Basic realm="Admin"'})
 
+@app.route('/admin/clients/<int:client_id>/soft-delete', methods=['POST'])
+def soft_delete_client(client_id):
+    s = get_session()
+    try:
+        c = s.execute(select(BusinessClient).where(BusinessClient.id == client_id)).scalars().first()
+        if c:
+            c.is_deleted = True
+            try:
+                from datetime import datetime
+                c.deleted_at = datetime.utcnow()
+            except Exception:
+                pass
+            s.commit()
+        return redirect(url_for('clients'))
+    finally:
+        s.close()
+
+@app.route('/admin/clients/deleted')
+def deleted_clients():
+    s = get_session()
+    try:
+        rows = s.execute(select(BusinessClient).where(BusinessClient.is_deleted.is_(True))).scalars().all()
+        return render_template('clients.html', clients=rows, show_deleted=True)
+    finally:
+        s.close()
+
+@app.route('/admin/clients/<int:client_id>/restore', methods=['POST'])
+def restore_client(client_id):
+    s = get_session()
+    try:
+        c = s.execute(select(BusinessClient).where(BusinessClient.id == client_id)).scalars().first()
+        if c:
+            c.is_deleted = False
+            c.deleted_at = None
+            s.commit()
+        return redirect(url_for('deleted_clients'))
+    finally:
+        s.close()
+
+@app.route('/admin/clients/<int:client_id>/permanent-delete', methods=['POST'])
+def permanent_delete_client(client_id):
+    s = get_session()
+    try:
+        c = s.execute(select(BusinessClient).where(BusinessClient.id == client_id)).scalars().first()
+        if c:
+            s.delete(c)
+            s.commit()
+        return redirect(url_for('deleted_clients'))
+    finally:
+        s.close()
 def main():
     logging.basicConfig(level=os.getenv('LOG_LEVEL', 'INFO'))
     logging.info('{"event":"admin_web_start"}')
@@ -341,3 +391,55 @@ def main():
 
 if __name__ == '__main__':
     main()
+
+@app.route('/admin/clients/<int:client_id>/soft-delete', methods=['POST'])
+def soft_delete_client(client_id):
+    s = get_session()
+    try:
+        c = s.execute(select(BusinessClient).where(BusinessClient.id == client_id)).scalars().first()
+        if c:
+            c.is_deleted = True
+            try:
+                from datetime import datetime
+                c.deleted_at = datetime.utcnow()
+            except Exception:
+                pass
+            s.commit()
+        return redirect(url_for('clients'))
+    finally:
+        s.close()
+
+@app.route('/admin/clients/deleted')
+def deleted_clients():
+    s = get_session()
+    try:
+        rows = s.execute(select(BusinessClient).where(BusinessClient.is_deleted.is_(True))).scalars().all()
+        return render_template('clients.html', clients=rows, show_deleted=True)
+    finally:
+        s.close()
+
+@app.route('/admin/clients/<int:client_id>/restore', methods=['POST'])
+def restore_client(client_id):
+    s = get_session()
+    try:
+        c = s.execute(select(BusinessClient).where(BusinessClient.id == client_id)).scalars().first()
+        if c:
+            c.is_deleted = False
+            c.deleted_at = None
+            s.commit()
+        return redirect(url_for('deleted_clients'))
+    finally:
+        s.close()
+
+@app.route('/admin/clients/<int:client_id>/permanent-delete', methods=['POST'])
+def permanent_delete_client(client_id):
+    s = get_session()
+    try:
+        c = s.execute(select(BusinessClient).where(BusinessClient.id == client_id)).scalars().first()
+        if c:
+            s.delete(c)
+            s.commit()
+        return redirect(url_for('deleted_clients'))
+    finally:
+        s.close()
+

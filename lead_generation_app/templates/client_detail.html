@@ -1,4 +1,4 @@
-<!doctype html>
+﻿<!doctype html>
 <html>
 <head>
   <meta charset="utf-8" />
@@ -25,15 +25,20 @@
     </select>
     <button type="submit" class="ml-2 px-3 py-1 bg-blue-600 text-white">Save</button>
   </form>
-  <form method="post" action="/admin/optout/add" class="mb-6">
-    <label class="mr-2">Add Opt-out</label>
-    <select name="method" class="border p-1">
-      <option value="email">email</option>
-      <option value="whatsapp">whatsapp</option>
-    </select>
-    <input name="value" placeholder="value" class="border p-1 ml-2" />
-    <button type="submit" class="ml-2 px-3 py-1 bg-blue-600 text-white">Add</button>
-  </form>
+  <div class="mb-6">
+    {% if client.is_deleted %}
+      <form method="post" action="/admin/clients/{{ client.id }}/restore" class="inline" onsubmit="return confirm('Restore this client?');">
+        <button type="submit" class="px-3 py-1 bg-green-600 text-white">Restore</button>
+      </form>
+      <form method="post" action="/admin/clients/{{ client.id }}/permanent-delete" class="inline ml-2" onsubmit="return confirm('Delete permanently?');">
+        <button type="submit" class="px-3 py-1 bg-red-700 text-white">Delete Permanently</button>
+      </form>
+    {% else %}
+      <form method="post" action="/admin/clients/{{ client.id }}/soft-delete" class="inline" onsubmit="return confirm('Move to Trash this client?');">
+        <button type="submit" class="px-3 py-1 bg-red-600 text-white"> Move to Trash</button>
+      </form>
+    {% endif %}
+  </div>
   <a href="/admin/clients" class="text-blue-600">Back</a>
 </body>
 </html>

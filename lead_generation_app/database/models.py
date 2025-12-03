@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, Text, Boolean, DateTime, Numeric, ForeignKey
+﻿from sqlalchemy import Column, Integer, Text, Boolean, DateTime, Numeric, ForeignKey
 from sqlalchemy.orm import declarative_base, relationship
 
 try:
@@ -73,6 +73,8 @@ class BusinessClient(Base):
     subscription_plan = Column(Text)
     number_of_users = Column(Integer)
     next_billing_date = Column(DateTime)
+    is_deleted = Column(Boolean, default=False)
+    deleted_at = Column(DateTime)
 
     delivered_leads = relationship("DeliveredLead", back_populates="business_client")
     payments = relationship("Payment", back_populates="business_client")
@@ -143,3 +145,4 @@ class SourceAttribution(Base):
     source_reference = Column(Text)
     campaign = Column(Text)
     collected_at = Column(DateTime)
+

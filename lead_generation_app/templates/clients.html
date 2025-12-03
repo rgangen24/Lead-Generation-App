@@ -1,4 +1,4 @@
-<!doctype html>
+﻿<!doctype html>
 <html>
 <head>
   <meta charset="utf-8" />
@@ -8,7 +8,15 @@
   <title>Clients</title>
 </head>
 <body class="p-6">
-  <h1 class="text-2xl font-bold mb-4">Clients</h1>
+  <h1 class="text-2xl font-bold mb-2">{% if show_deleted %}Deleted Clients{% else %}Clients{% endif %}</h1>
+  <div class="mb-4">
+    {% if show_deleted %}
+      <a href="/admin/clients" class="text-blue-600">Back to Clients</a>
+    {% else %}
+      <a href="/admin/clients/deleted" class="text-blue-600">View Deleted Clients</a>
+    {% endif %}
+  </div>
+  {% if not show_deleted %}
   <form method="get" class="mb-4 flex items-center gap-2"
         hx-get="/admin/clients" hx-target="#clients-tbody" hx-swap="innerHTML" hx-push-url="false"
         hx-trigger="keyup delay:300ms from:#search, change from:#plan, submit">
@@ -21,8 +29,17 @@
     </select>
     <button type="submit" class="px-3 py-1 bg-blue-600 text-white">Filter</button>
   </form>
+  {% endif %}
   <table class="min-w-full border">
-    <thead><tr><th class="p-2 border">Client</th><th class="p-2 border">Plan</th><th class="p-2 border">Cap Used</th><th class="p-2 border">Next Billing</th></tr></thead>
+    <thead>
+      <tr>
+        <th class="p-2 border">Client</th>
+        <th class="p-2 border">Plan</th>
+        <th class="p-2 border">Cap Used</th>
+        <th class="p-2 border">Next Billing</th>
+        <th class="p-2 border">Actions</th>
+      </tr>
+    </thead>
     <tbody id="clients-tbody">
       {% include 'clients_body.html' %}
     </tbody>

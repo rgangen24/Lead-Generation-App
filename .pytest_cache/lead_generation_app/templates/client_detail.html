@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Client Detail</title>
+  <style>
+    body { font-family: system-ui, Arial, sans-serif; margin: 2rem; }
+    dl { display: grid; grid-template-columns: 200px 1fr; gap: 0.5rem 1rem; }
+    dt { font-weight: 600; }
+  </style>
+</head>
+<body>
+  <h1>Client: {{ client.business_name }}</h1>
+  <a href="/admin/clients">Back to Clients</a>
+  <dl>
+    <dt>ID</dt><dd>{{ client.id }}</dd>
+    <dt>Industry</dt><dd>{{ client.industry }}</dd>
+    <dt>Email</dt><dd>{{ client.email }}</dd>
+    <dt>Phone</dt><dd>{{ client.phone }}</dd>
+    <dt>WhatsApp</dt><dd>{{ client.whatsapp }}</dd>
+    <dt>Plan</dt><dd>{{ client.subscription_plan }}</dd>
+    <dt>Cap Used (month)</dt><dd>{{ cap_used }}</dd>
+    <dt>Opens (month)</dt><dd>{{ opens }}</dd>
+    <dt>Bounces (total)</dt><dd>{{ bounces }}</dd>
+    <dt>Opt-outs Email (total)</dt><dd>{{ optouts_email }}</dd>
+    <dt>Opt-outs WhatsApp (total)</dt><dd>{{ optouts_wa }}</dd>
+  </dl>
+</body>
+</html>
+

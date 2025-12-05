@@ -5,7 +5,6 @@ import base64
 import hmac
 from flask import Flask, render_template, request, redirect, url_for, Response, jsonify
 from sqlalchemy import select, func
-from flask_wtf.csrf import CSRFProtect
 from datetime import datetime, timedelta
 from lead_generation_app.database.database import get_session, init_db
 from lead_generation_app.database.models import BusinessClient, Payment, DeliveredLead, QualifiedLead, OptOut, Bounce, LeadSource
@@ -19,8 +18,6 @@ from lead_generation_app.analytics import (
 from lead_generation_app.config.pricing import BASE_PLANS
 
 app = Flask(__name__, template_folder=os.path.join(os.path.dirname(__file__), 'templates'))
-app.config['SECRET_KEY'] = os.getenv('SECRET_KEY') or os.urandom(24).hex()
-csrf = CSRFProtect(app)
 
 def _init():
     with app.app_context():
@@ -463,4 +460,7 @@ def main():
 
 if __name__ == '__main__':
     main()
+
+
+    if request.path.startswith('/admin') and not request.path.startswith('/admin/health'):
 

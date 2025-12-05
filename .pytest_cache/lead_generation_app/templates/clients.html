@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Clients</title>
+  <style>
+    body { font-family: system-ui, Arial, sans-serif; margin: 2rem; }
+    table { border-collapse: collapse; width: 100%; }
+    th, td { border: 1px solid #ddd; padding: 8px; }
+    th { background: #f5f5f5; text-align: left; }
+  </style>
+</head>
+<body>
+  <h1>Clients</h1>
+  <a href="/admin/">Back to Dashboard</a>
+  {% if clients %}
+  <table>
+    <thead>
+      <tr>
+        <th>ID</th><th>Name</th><th>Plan</th><th>Cap Used</th><th>Next Billing</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for c in clients %}
+      <tr>
+        <td>{{ c.id }}</td>
+        <td><a href="/admin/clients/{{ c.id }}">{{ c.name }}</a></td>
+        <td>{{ c.plan }}</td>
+        <td>{{ c.cap_used }}</td>
+        <td>{{ c.next_billing_date or '' }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p>No clients found.</p>
+  {% endif %}
+</body>
+</html>
+

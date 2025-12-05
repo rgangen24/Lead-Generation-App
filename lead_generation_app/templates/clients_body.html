@@ -9,13 +9,16 @@
     <td class="p-2 border">
       {% if show_deleted %}
         <form method="post" action="/admin/clients/{{ c.id }}/restore" class="inline" onsubmit="return confirm('Restore this client?');">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
           <button type="submit" class="px-2 py-1 bg-green-600 text-white">Restore</button>
         </form>
         <form method="post" action="/admin/clients/{{ c.id }}/permanent-delete" class="inline ml-2" onsubmit="return confirm('Delete permanently?');">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
           <button type="submit" class="px-2 py-1 bg-red-700 text-white">Delete Permanently</button>
         </form>
       {% else %}
         <form method="post" action="/admin/clients/{{ c.id }}/soft-delete" class="inline" onsubmit="return confirm('Move to Trash this client?');">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
           <button type="submit" class="px-2 py-1 bg-red-600 text-white">Move to Trash</button>
         </form>
       {% endif %}

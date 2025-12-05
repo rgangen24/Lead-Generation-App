@@ -146,3 +146,12 @@ class SourceAttribution(Base):
     campaign = Column(Text)
     collected_at = Column(DateTime)
 
+
+class User(Base):
+    __tablename__ = "users"
+
+    id = Column(Integer, primary_key=True)
+    username = Column(Text, unique=True)
+    hashed_password = Column(Text)
+    is_active = Column(Boolean, default=True)
+    created_at = Column(DateTime)

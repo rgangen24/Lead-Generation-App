@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Analytics</title>
+  <style>
+    body { font-family: system-ui, Arial, sans-serif; margin: 2rem; }
+    pre { background: #f7f7f7; padding: 1rem; overflow: auto; }
+  </style>
+</head>
+<body>
+  <h1>Analytics</h1>
+  <a href="/admin/">Back to Dashboard</a>
+  <h2>Clients</h2>
+  <ul>
+    {% for c in clients %}
+      <li>{{ c.business_name }} (ID: {{ c.id }})</li>
+    {% endfor %}
+  </ul>
+
+  <h2>Platforms</h2>
+  <ul>
+    {% for p in platforms %}
+      <li>{{ p }}</li>
+    {% endfor %}
+  </ul>
+
+  <h2>Metrics</h2>
+  <pre>{{ metrics | tojson(indent=2) }}</pre>
+</body>
+</html>
+

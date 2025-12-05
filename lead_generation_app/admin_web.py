@@ -3,7 +3,7 @@ import logging
 import json
 import base64
 import hmac
-from flask import Flask, render_template, request, redirect, url_for, Response
+from flask import Flask, render_template, request, redirect, url_for, Response, jsonify
 from sqlalchemy import select, func
 from datetime import datetime, timedelta
 from lead_generation_app.database.database import get_session, init_db
@@ -313,7 +313,7 @@ def api_client_create():
 
 @app.before_request
 def _protect_admin():
-    if request.path.startswith('/admin'):
+    if request.path.startswith('/admin') and not request.path.startswith('/admin/health'):
         auth = request.headers.get('Authorization', '')
         ok = False
         if auth.startswith('Basic '):
@@ -377,21 +377,7 @@ def permanent_delete_client(client_id):
         return redirect(url_for('deleted_clients'))
     finally:
         s.close()
-def main():
-    logging.basicConfig(level=os.getenv('LOG_LEVEL', 'INFO'))
-    logging.info('{"event":"admin_web_start"}')
-    raw = os.getenv('PORT') or os.getenv('ADMIN_PORT') or '8081'
-    try:
-        port = int(raw)
-    except Exception:
-        port = 8081
-    _init()
-    logging.info('{"event":"admin_web_bind","port":%d}' % port)
-    app.run(host='0.0.0.0', port=port)
 
-if __name__ == '__main__':
-    main()
-
 @app.route('/admin/clients/bulk-soft-delete', methods=['POST'])
 def bulk_soft_delete():
     ids = request.form.getlist('client_ids')
@@ -450,3 +436,28 @@ def bulk_permanent_delete():
         return redirect(url_for('deleted_clients'))
     finally:
         s.close()
+
+@app.route('/admin/health')
+def admin_health():
+    ts = datetime.utcnow().isoformat()
+    s = get_session()
+    try:
+        s.execute(select(func.count(BusinessClient.id))).scalar_one()
+        return jsonify(status='healthy', timestamp=ts), 200
+    except Exception:
+        return jsonify(status='unhealthy', timestamp=ts), 503
+def main():
+    logging.basicConfig(level=os.getenv('LOG_LEVEL', 'INFO'))
+    logging.info('{"event":"admin_web_start"}')
+    raw = os.getenv('PORT') or os.getenv('ADMIN_PORT') or '8081'
+    try:
+        port = int(raw)
+    except Exception:
+        port = 8081
+    _init()
+    logging.info('{"event":"admin_web_bind","port":%d}' % port)
+    app.run(host='0.0.0.0', port=port)
+
+if __name__ == '__main__':
+    main()
+

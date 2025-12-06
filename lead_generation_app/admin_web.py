@@ -3,6 +3,7 @@ import logging
 import json
 import base64
 import hmac
+from functools import wraps
 from flask import Flask, render_template, request, redirect, url_for, Response, jsonify
 from sqlalchemy import select, func
 from flask_wtf.csrf import CSRFProtect
@@ -21,6 +22,23 @@ from lead_generation_app.config.pricing import BASE_PLANS
 app = Flask(__name__, template_folder=os.path.join(os.path.dirname(__file__), 'templates'))
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY') or os.urandom(24).hex()
 csrf = CSRFProtect(app)
+
+# ============ API KEY AUTHENTICATION ============
+API_KEYS = {
+    os.environ.get('API_KEY'): True
+}
+
+def require_api_key(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        api_key = request.headers.get('X-API-Key')
+        if not api_key:
+            return jsonify({"error": "Missing API key"}), 401
+        if api_key not in API_KEYS:
+            return jsonify({"error": "Invalid API key"}), 401
+        return f(*args, **kwargs)
+    return decorated_function
+# ============ END API KEY AUTHENTICATION ============
 
 def _init():
     with app.app_context():
@@ -347,6 +365,46 @@ def soft_delete_client(client_id):
     finally:
         s.close()
 
+# ============ API ENDPOINT FOR SOFT-DELETE ============
+@app.route('/api/admin/clients/<int:client_id>/soft-delete', methods=['POST'])
+@require_api_key
+@csrf.exempt
+def api_soft_delete_client(client_id):
+    """API version of soft delete - returns JSON, no CSRF"""
+    s = get_session()
+    try:
+        c = s.execute(select(BusinessClient).where(BusinessClient.id == client_id)).scalars().first()
+        if not c:
+            return jsonify({
+                "status": "error",
+                "message": f"Client {client_id} not found"
+            }), 404
+            
+        c.is_deleted = True
+        try:
+            from datetime import datetime
+            c.deleted_at = datetime.utcnow()
+        except Exception:
+            pass
+        s.commit()
+        
+        return jsonify({
+            "status": "success",
+            "message": f"Client {client_id} soft deleted",
+            "client_id": client_id,
+            "timestamp": datetime.utcnow().isoformat()
+        }), 200
+        
+    except Exception as e:
+        s.rollback()
+        return jsonify({
+            "status": "error",
+            "message": str(e)
+        }), 500
+    finally:
+        s.close()
+# ============ END API ENDPOINT ============
+
 @app.route('/admin/clients/deleted')
 def deleted_clients():
     s = get_session()
@@ -463,4 +521,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-

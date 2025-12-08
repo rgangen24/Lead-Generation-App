@@ -1,5 +1,8 @@
-﻿from sqlalchemy import Column, Integer, Text, Boolean, DateTime, Numeric, ForeignKey
+from sqlalchemy import Column, Integer, Text, Boolean, DateTime, Numeric, ForeignKey
 from sqlalchemy.orm import declarative_base, relationship
+import os
+from flask_login import UserMixin
+from werkzeug.security import generate_password_hash, check_password_hash
 
 try:
     from sqlalchemy.dialects.postgresql import JSON
@@ -155,3 +158,21 @@ class User(Base):
     hashed_password = Column(Text)
     is_active = Column(Boolean, default=True)
     created_at = Column(DateTime)
+
+
+class LoginUser(UserMixin):
+    def __init__(self, id, username, password_hash):
+        self.id = id
+        self.username = username
+        self.password_hash = password_hash
+
+    def check_password(self, password):
+        return check_password_hash(self.password_hash, password)
+
+    @staticmethod
+    def get(user_id):
+        admin_user = os.getenv('ADMIN_USER')
+        admin_pass = os.getenv('ADMIN_PASS')
+        if admin_user and admin_pass:
+            return LoginUser(id=1, username=admin_user, password_hash=generate_password_hash(admin_pass))
+        return None

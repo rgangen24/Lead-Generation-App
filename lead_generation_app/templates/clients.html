@@ -1,4 +1,4 @@
-﻿<!doctype html>
+<!doctype html>
 <html>
 <head>
   <meta charset="utf-8" />
@@ -8,6 +8,10 @@
   <title>Clients</title>
 </head>
 <body class="p-6">
+  <div style="float: right;">
+    <small>Logged in as {{ current_user.username }}</small>
+    <a href="{{ url_for('logout') }}">Logout</a>
+  </div>
   <h1 class="text-2xl font-bold mb-2">{% if show_deleted %}Deleted Clients{% else %}Clients{% endif %}</h1>
   <div class="mb-4 flex items-center gap-4">
     {% if show_deleted %}

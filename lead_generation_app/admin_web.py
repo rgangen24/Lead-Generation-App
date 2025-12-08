@@ -1,15 +1,17 @@
-﻿import os
+import os
 import logging
 import json
 import base64
 import hmac
 from functools import wraps
+import traceback
 from flask import Flask, render_template, request, redirect, url_for, Response, jsonify
+from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 from sqlalchemy import select, func
-from flask_wtf.csrf import CSRFProtect
+from flask_wtf.csrf import CSRFProtect, generate_csrf
 from datetime import datetime, timedelta
 from lead_generation_app.database.database import get_session, init_db
-from lead_generation_app.database.models import BusinessClient, Payment, DeliveredLead, QualifiedLead, OptOut, Bounce, LeadSource
+from lead_generation_app.database.models import BusinessClient, Payment, DeliveredLead, QualifiedLead, OptOut, Bounce, LeadSource, LoginUser
 from lead_generation_app.payments import update_subscription
 from lead_generation_app.payments import is_client_active
 from lead_generation_app.analytics import (
@@ -22,6 +24,19 @@ from lead_generation_app.config.pricing import BASE_PLANS
 app = Flask(__name__, template_folder=os.path.join(os.path.dirname(__file__), 'templates'))
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY') or os.urandom(24).hex()
 csrf = CSRFProtect(app)
+
+@app.context_processor
+def inject_csrf_token():
+    from flask_wtf.csrf import generate_csrf as _gen
+    return dict(csrf_token=lambda: _gen())
+
+login_manager = LoginManager()
+login_manager.init_app(app)
+login_manager.login_view = 'login'
+
+@login_manager.user_loader
+def load_user(user_id):
+    return LoginUser.get(user_id)
 
 # ============ API KEY AUTHENTICATION ============
 API_KEYS = {
@@ -53,7 +68,29 @@ def _month_window(now):
 def home():
     return redirect(url_for('dashboard'))
 
+@app.route('/admin/login', methods=['GET', 'POST'])
+def login():
+    if current_user.is_authenticated:
+        return redirect(url_for('dashboard'))
+    if request.method == 'POST':
+        username = (request.form.get('username', '') or '').strip()
+        password = (request.form.get('password', '') or '').strip()
+        remember = (request.form.get('remember') == 'on')
+        user = LoginUser.get(1)
+        if user and user.username == username and user.check_password(password):
+            login_user(user, remember=remember)
+            next_page = request.args.get('next')
+            return redirect(next_page or url_for('dashboard'))
+        return render_template('login.html', error='Invalid username or password')
+    try:
+        return render_template('login.html')
+    except Exception as e:
+        print(f"LOGIN PAGE ERROR: {e}")
+        print(traceback.format_exc())
+        raise
+
 @app.route('/admin/')
+@login_required
 def dashboard():
     s = get_session()
     try:
@@ -71,6 +108,7 @@ def dashboard():
         s.close()
 
 @app.route('/admin/clients')
+@login_required
 def clients():
     s = get_session()
     try:
@@ -94,6 +132,7 @@ def clients():
         s.close()
 
 @app.route('/admin/clients/<int:client_id>')
+@login_required
 def client_detail(client_id):
     s = get_session()
     try:
@@ -112,12 +151,14 @@ def client_detail(client_id):
         s.close()
 
 @app.route('/admin/clients/<int:client_id>/update_plan', methods=['POST'])
+@login_required
 def update_plan(client_id):
     plan = request.form.get('plan')
     update_subscription(client_id, plan_name=plan, number_of_users=None, payment_status='paid')
     return redirect(url_for('client_detail', client_id=client_id))
 
 @app.route('/admin/optout/add', methods=['POST'])
+@login_required
 def add_optout():
     method = request.form.get('method')
     value = request.form.get('value')
@@ -131,6 +172,7 @@ def add_optout():
         s.close()
 
 @app.route('/admin/analytics')
+@login_required
 def analytics():
     s = get_session()
     try:
@@ -334,21 +376,16 @@ def api_client_create():
 
 @app.before_request
 def _protect_admin():
-    if request.path.startswith('/admin') and not request.path.startswith('/admin/health'):
-        auth = request.headers.get('Authorization', '')
-        ok = False
-        if auth.startswith('Basic '):
-            try:
-                raw = base64.b64decode(auth.split(' ', 1)[1]).decode('utf-8')
-                if ':' in raw:
-                    u, p = raw.split(':', 1)
-                    ok = hmac.compare_digest(u, os.getenv('ADMIN_USER', 'admin')) and hmac.compare_digest(p, os.getenv('ADMIN_PASS', 'admin'))
-            except Exception:
-                ok = False
-        if not ok:
-            return Response('Unauthorized', 401, {'WWW-Authenticate': 'Basic realm="Admin"'})
+    if request.path == '/admin/health':
+        return
+    if request.path == '/admin/login':
+        return
+    if request.path.startswith('/admin/'):
+        if not current_user.is_authenticated:
+            return redirect(url_for('login'))
 
 @app.route('/admin/clients/<int:client_id>/soft-delete', methods=['POST'])
+@login_required
 def soft_delete_client(client_id):
     s = get_session()
     try:
@@ -406,6 +443,7 @@ def api_soft_delete_client(client_id):
 # ============ END API ENDPOINT ============
 
 @app.route('/admin/clients/deleted')
+@login_required
 def deleted_clients():
     s = get_session()
     try:
@@ -415,6 +453,7 @@ def deleted_clients():
         s.close()
 
 @app.route('/admin/clients/<int:client_id>/restore', methods=['POST'])
+@login_required
 def restore_client(client_id):
     s = get_session()
     try:
@@ -428,6 +467,7 @@ def restore_client(client_id):
         s.close()
 
 @app.route('/admin/clients/<int:client_id>/permanent-delete', methods=['POST'])
+@login_required
 def permanent_delete_client(client_id):
     s = get_session()
     try:
@@ -440,6 +480,7 @@ def permanent_delete_client(client_id):
         s.close()
 
 @app.route('/admin/clients/bulk-soft-delete', methods=['POST'])
+@login_required
 def bulk_soft_delete():
     ids = request.form.getlist('client_ids')
     s = get_session()
@@ -460,6 +501,7 @@ def bulk_soft_delete():
         s.close()
 
 @app.route('/admin/clients/bulk-restore', methods=['POST'])
+@login_required
 def bulk_restore():
     ids = request.form.getlist('client_ids')
     s = get_session()
@@ -480,6 +522,7 @@ def bulk_restore():
         s.close()
 
 @app.route('/admin/clients/bulk-permanent-delete', methods=['POST'])
+@login_required
 def bulk_permanent_delete():
     ids = request.form.getlist('client_ids')
     s = get_session()
@@ -518,6 +561,12 @@ def main():
     _init()
     logging.info('{"event":"admin_web_bind","port":%d}' % port)
     app.run(host='0.0.0.0', port=port)
+
+@app.route('/admin/logout')
+@login_required
+def logout():
+    logout_user()
+    return redirect(url_for('login'))
 
 if __name__ == '__main__':
     main()

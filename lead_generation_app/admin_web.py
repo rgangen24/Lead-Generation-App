@@ -23,6 +23,17 @@ from lead_generation_app.config.pricing import BASE_PLANS
 
 app = Flask(__name__, template_folder=os.path.join(os.path.dirname(__file__), 'templates'))
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY') or os.urandom(24).hex()
+app.config.update(
+    SESSION_COOKIE_SECURE=True,
+    SESSION_COOKIE_HTTPONLY=True,
+    SESSION_COOKIE_SAMESITE='Lax',
+    PERMANENT_SESSION_LIFETIME=86400,
+    REMEMBER_COOKIE_SECURE=True,
+    REMEMBER_COOKIE_HTTPONLY=True,
+    REMEMBER_COOKIE_DURATION=timedelta(days=30),
+    PREFERRED_URL_SCHEME='https',
+    APPLICATION_ROOT='/'
+)
 csrf = CSRFProtect(app)
 
 @app.context_processor

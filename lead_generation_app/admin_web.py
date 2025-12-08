@@ -23,6 +23,9 @@ from lead_generation_app.config.pricing import BASE_PLANS
 
 app = Flask(__name__, template_folder=os.path.join(os.path.dirname(__file__), 'templates'))
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY') or os.urandom(24).hex()
+app.jinja_env.globals['min'] = min
+app.jinja_env.globals['max'] = max
+app.jinja_env.globals['range'] = range
 is_production = os.getenv('RENDER') is not None
 app.config.update(
     PERMANENT_SESSION_LIFETIME=86400,
@@ -127,7 +130,17 @@ def clients():
     try:
         now = datetime.utcnow()
         start, end = _month_window(now)
-        rows = s.execute(select(BusinessClient).where(BusinessClient.is_deleted.is_(False))).scalars().all()
+        page = request.args.get('page', 1, type=int)
+        per_page = request.args.get('per_page', 25, type=int)
+        page = max(1, page)
+        per_page = max(1, min(100, per_page))
+        offset = (page - 1) * per_page
+
+        total_query = select(func.count(BusinessClient.id)).where(BusinessClient.is_deleted.is_(False))
+        total_clients = s.execute(total_query).scalar_one()
+        clients_query = select(BusinessClient).where(BusinessClient.is_deleted.is_(False))
+        clients_query = clients_query.offset(offset).limit(per_page)
+        rows = s.execute(clients_query).scalars().all()
         q = (request.args.get('q') or '').strip().lower()
         plan = (request.args.get('plan') or '').strip().lower()
         data = []
@@ -140,7 +153,7 @@ def clients():
             data.append({'id': c.id, 'name': c.business_name, 'plan': c.subscription_plan, 'cap_used': int(delivered), 'next_billing_date': (c.next_billing_date.isoformat() if c.next_billing_date else None)})
         if request.headers.get('HX-Request'):
             return render_template('clients_body.html', clients=data)
-        return render_template('clients.html', clients=data, q=q, plan=plan)
+        return render_template('clients.html', clients=data, q=q, plan=plan, page=page, per_page=per_page, total_clients=total_clients, total_pages=(total_clients + per_page - 1) // per_page)
     finally:
         s.close()
 

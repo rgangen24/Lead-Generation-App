@@ -68,5 +68,39 @@
       </tbody>
     </table>
   </form>
+  <!-- ============ PAGINATION CONTROLS ============ -->
+  {% if total_pages > 1 %}
+  <div class="pagination" style="margin-top: 20px; text-align: center;">
+    <div style="margin-bottom: 10px;">
+      <span>Show: </span>
+      <select onchange="window.location.href='?page=1&per_page='+this.value+'{% if q %}&q={{ q }}{% endif %}{% if plan %}&plan={{ plan }}{% endif %}'">
+        <option value="10" {% if per_page == 10 %}selected{% endif %}>10</option>
+        <option value="25" {% if per_page == 25 %}selected{% endif %}>25</option>
+        <option value="50" {% if per_page == 50 %}selected{% endif %}>50</option>
+        <option value="100" {% if per_page == 100 %}selected{% endif %}>100</option>
+      </select>
+      <span> clients per page</span>
+    </div>
+    <div style="margin-bottom: 10px;">
+      Showing {{ ((page-1)*per_page)+1 }} to {{ min(page*per_page, total_clients) }} of {{ total_clients }} clients
+    </div>
+    <div>
+      {% if page > 1 %}
+        <a href="?page={{ page-1 }}&per_page={{ per_page }}{% if q %}&q={{ q }}{% endif %}{% if plan %}&plan={{ plan }}{% endif %}" class="page-link">« Previous</a>
+      {% endif %}
+      {% for p in range(max(1, page-2), min(total_pages, page+2)+1) %}
+        {% if p == page %}
+          <strong style="margin: 0 5px;">{{ p }}</strong>
+        {% else %}
+          <a href="?page={{ p }}&per_page={{ per_page }}{% if q %}&q={{ q }}{% endif %}{% if plan %}&plan={{ plan }}{% endif %}" style="margin: 0 5px;">{{ p }}</a>
+        {% endif %}
+      {% endfor %}
+      {% if page < total_pages %}
+        <a href="?page={{ page+1 }}&per_page={{ per_page }}{% if q %}&q={{ q }}{% endif %}{% if plan %}&plan={{ plan }}{% endif %}" class="page-link">Next »</a>
+      {% endif %}
+    </div>
+  </div>
+  {% endif %}
+  <!-- ============ END PAGINATION ============ -->
 </body>
 </html>
